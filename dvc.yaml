@@ -10,7 +10,7 @@ stages:
     outs:
     - data/prepared
   featurize:
-    cmd: python src/featurization.py data/prepared data/features
+    cmd: python src/featurization.py data/prepared preprocessing
     deps:
     - data/prepared
     - src/featurization.py
@@ -18,11 +18,15 @@ stages:
     - featurize.max_features
     - featurize.ngrams
     outs:
-    - data/features
+    - preprocessing
+    - preprocessing.mlem:
+        cache: false
   train:
-    cmd: python src/train.py data/features model.pkl
+    cmd: python src/train.py data/prepared preprocessing model.pkl
     deps:
-    - data/features
+    - data/prepared
+    - preprocessing
+    - preprocessing.mlem
     - src/train.py
     params:
     - train.min_split
@@ -30,11 +34,14 @@ stages:
     - train.seed
     outs:
     - model.pkl
+    - model.pkl.mlem:
+        cache: false
   evaluate:
-    cmd: python src/evaluate.py model.pkl data/features
+    cmd: python src/evaluate.py model.pkl data/prepared
     deps:
-    - data/features
+    - data/prepared
     - model.pkl
+    - model.pkl.mlem
     - src/evaluate.py
     outs:
     - eval/importance.png
