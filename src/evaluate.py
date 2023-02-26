@@ -1,14 +1,15 @@
 import json
 import math
 import os
-import pickle
 import sys
 
 import pandas as pd
 from sklearn import metrics
-from sklearn import tree
 from dvclive import Live
 from matplotlib import pyplot as plt
+from mlem.api import load_meta
+
+from featurization import get_df
 
 
 EVAL_PATH = "eval"
@@ -19,15 +20,17 @@ if len(sys.argv) != 3:
     sys.stderr.write("\tpython evaluate.py model features\n")
     sys.exit(1)
 
-model_file = sys.argv[1]
-train_file = os.path.join(sys.argv[2], "train.pkl")
-test_file = os.path.join(sys.argv[2], "test.pkl")
+preprocessor_path = sys.argv[1]
+model_file = sys.argv[2]
+train_file = os.path.join(sys.argv[3], "train.tsv")
+test_file = os.path.join(sys.argv[3], "test.tsv")
 
 
-def evaluate(model, matrix, split, live):
+def evaluate(model, df, split, live):
     """Dump all evaluation metrics and plots for given datasets."""
-    labels = matrix[:, 1].toarray().astype(int)
-    x = matrix[:, 2:]
+    
+    labels = df.label
+    x = df.text
 
     predictions_by_class = model.predict_proba(x)
     predictions = predictions_by_class[:, 1]
@@ -76,14 +79,11 @@ def evaluate(model, matrix, split, live):
 
 
 # Load model and data.
-with open(model_file, "rb") as fd:
-    model = pickle.load(fd)
-
-with open(train_file, "rb") as fd:
-    train, feature_names = pickle.load(fd)
-
-with open(test_file, "rb") as fd:
-    test, _ = pickle.load(fd)
+model = load_meta(model_file)
+train = get_df(train_file)
+test = get_df(test_file)
+with open("feature_names.txt") as f:
+    feature_names = f.readlines()
 
 # Evaluate train and test datasets.
 live = Live(os.path.join(EVAL_PATH, "live"), dvcyaml=False)
